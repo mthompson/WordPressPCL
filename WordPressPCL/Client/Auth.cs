@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -88,7 +89,7 @@ namespace WordPressPCL.Client {
                     new KeyValuePair<string, string>("username", username),
                     new KeyValuePair<string, string>("password", password)
             });
-            
+
             switch (JWTPlugin) {
                 case JWTPlugin.JWTAuthByEnriqueChavez:
                     var (jwtUser, _) = await _httpHelper.PostRequestAsync<JWTUser>(route, formContent, isAuthRequired: false, ignoreDefaultPath: true).ConfigureAwait(false);
@@ -99,6 +100,19 @@ namespace WordPressPCL.Client {
                     var (jwtResponse, _) = await _httpHelper.PostRequestAsync<JWTResponse>(route, formContent, isAuthRequired: false, ignoreDefaultPath: true).ConfigureAwait(false);
                     _httpHelper.HttpResponsePreProcessing = null;
                     _httpHelper.JWToken = jwtResponse?.Data?.Token;
+                    break;
+                case JWTPlugin.JWTAuthByMichielvanEerd:
+                    var jsonDynamic = new
+                    {
+                        username = username,
+                        password = password
+                    };
+
+                    var jsonBody = new StringContent(JsonConvert.SerializeObject(jsonDynamic), Encoding.UTF8, "application/json");
+                    // change route path
+                    route = "api-bearer-auth/v1/login";
+                    var (jwtAuthUser, _) = await _httpHelper.PostRequestAsync<dynamic>(route, jsonBody, isAuthRequired: false, ignoreDefaultPath: true).ConfigureAwait(false);
+                    _httpHelper.JWToken = jwtAuthUser?.access_token;
                     break;
                 default:
                     throw new WPException("Invalid JWT Plugin");

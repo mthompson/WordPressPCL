@@ -14,7 +14,12 @@ namespace WordPressPCL.Models {
         /// JWT Auth – WordPress JSON Web Token Authentication plugin
         /// Author - Useful Team
         /// </summary>
-        JWTAuthByUsefulTeam
-        
+        JWTAuthByUsefulTeam,
+        /// <summary>
+        /// API Bearer Auth – WordPress JSON Web Token Authentication plugin
+        /// Author - Michiel van Eerd
+        /// </summary>
+        JWTAuthByMichielvanEerd
+
     }
 }
