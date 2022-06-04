@@ -108,11 +108,11 @@ namespace WordPressPCL.Utility
             route += embedParam;
 
             HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Get, route))
-            {
-                SetAuthHeader(isAuthRequired, requestMessage);
-                response = await _httpClient.SendAsync(requestMessage).ConfigureAwait(false);
-            }
+            var requestMessage = new HttpRequestMessage(HttpMethod.Get, route);
+            requestMessage.Headers.Authorization = GetAuthHeader(isAuthRequired, requestMessage);
+      
+            response = await _httpClient.SendAsync(requestMessage).ConfigureAwait(false);
+            
             LastResponseHeaders = response.Headers;
             var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
@@ -132,12 +132,11 @@ namespace WordPressPCL.Utility
         {
             route = ignoreDefaultPath ? route : $"{_defaultPath}{route}";
             HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Post, route))
-            {
-                SetAuthHeader(isAuthRequired, requestMessage);
-                requestMessage.Content = postBody;
-                response = await _httpClient.SendAsync(requestMessage).ConfigureAwait(false);
-            }
+
+            var requestMessage = new HttpRequestMessage(HttpMethod.Post, route);
+            requestMessage.Headers.Authorization = GetAuthHeader(isAuthRequired, requestMessage);
+            requestMessage.Content = postBody;
+            response = await _httpClient.SendAsync(requestMessage).ConfigureAwait(false);
 
             LastResponseHeaders = response.Headers;
             var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -157,11 +156,10 @@ namespace WordPressPCL.Utility
         {
             route = ignoreDefaultPath ? route : $"{_defaultPath}{route}";
             HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Delete, route))
-            {
-                SetAuthHeader(isAuthRequired, requestMessage);
-                response = await _httpClient.SendAsync(requestMessage).ConfigureAwait(false);
-            }
+
+            var requestMessage = new HttpRequestMessage(HttpMethod.Delete, route);
+            requestMessage.Headers.Authorization = GetAuthHeader(isAuthRequired, requestMessage);
+            response = await _httpClient.SendAsync(requestMessage).ConfigureAwait(false);
 
             LastResponseHeaders = response.Headers;
             var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
@@ -179,12 +177,11 @@ namespace WordPressPCL.Utility
         {
             route = ignoreDefaultPath ? route : $"{_defaultPath}{route}";
             HttpResponseMessage response;
-            using (var requestMessage = new HttpRequestMessage(HttpMethod.Head, route))
-            {
-                SetAuthHeader(isAuthRequired, requestMessage);
-                response = await _httpClient.SendAsync(requestMessage).ConfigureAwait(false);
-            }
 
+            var requestMessage = new HttpRequestMessage(HttpMethod.Head, route);
+            requestMessage.Headers.Authorization = GetAuthHeader(isAuthRequired, requestMessage);
+            response = await _httpClient.SendAsync(requestMessage).ConfigureAwait(false);
+            
             LastResponseHeaders = response.Headers;
             if (response.IsSuccessStatusCode)
             {
@@ -213,6 +210,30 @@ namespace WordPressPCL.Utility
                 }
             }
         }
+
+        private AuthenticationHeaderValue GetAuthHeader(bool isAuthRequired, HttpRequestMessage requestMessage)
+        {
+            AuthenticationHeaderValue authHeader = null;
+            if (isAuthRequired)
+            {
+                if (AuthMethod == AuthMethod.Bearer)
+                {
+                    authHeader = new AuthenticationHeaderValue("Bearer", JWToken);
+                }
+                else if (AuthMethod == AuthMethod.Basic)
+                {
+                    var authToken = Encoding.ASCII.GetBytes($"{UserName}:{ApplicationPassword}");
+                    authHeader = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authToken)); 
+                }
+                else
+                {
+                    throw new WPException("Unsupported Authentication Method");
+                }
+            }
+
+            return authHeader;
+        }
+
 
         private TClass DeserializeJsonResponse<TClass>(HttpResponseMessage response, string responseString)
         {
